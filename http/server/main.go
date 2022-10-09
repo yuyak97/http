@@ -4,13 +4,16 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/textproto"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
+
 
 func main() {
 	fmt.Println("start tcp listen...")
@@ -50,15 +53,14 @@ func handleClient(conn net.Conn) {
 
 	reader := bufio.NewReader(conn)
 	scanner := textproto.NewReader(reader)
-	scanRequest(scanner, reader, conn)
+	method, path, body := scanRequest(scanner, reader, conn)
+	route(conn, method, path, body)
 
 	fmt.Println("<<< end")
 }
 
-func scanRequest(scanner *textproto.Reader, reader *bufio.Reader, conn net.Conn) {
-	var method, path string
+func scanRequest(scanner *textproto.Reader, reader *bufio.Reader, conn net.Conn) (method, path, body string) {
 	header := make(map[string]string)
-
 	isFirst := true
 
 	// 一行ずつ処理する
@@ -90,13 +92,6 @@ func scanRequest(scanner *textproto.Reader, reader *bufio.Reader, conn net.Conn)
 	method = header["Method"]
 	path = header["Path"]
 	
-	if method == "GET" && path == "/" {
-		io.WriteString(conn, "HTTP/1.1 200 OK\r\n")
-		io.WriteString(conn, "Content-Type: text/html\r\n")
-    	io.WriteString(conn, "\r\n")
-    	io.WriteString(conn, "<h1>Hello World!!</h1>")
-	}
-
 	if method == "POST" || method == "PUT" {
         len, err := strconv.Atoi(header["Content-Length"])
        
@@ -108,7 +103,45 @@ func scanRequest(scanner *textproto.Reader, reader *bufio.Reader, conn net.Conn)
         checkError(err)
         
         fmt.Println("BODY:", string(buf))
+
+		body = string(buf)
     }
+
+	return method, path, body
+}
+
+func route(conn net.Conn, method, path, body string) {
+	if method == "GET" && path == "/" {
+		io.WriteString(conn, "HTTP/1.1 200 OK\r\n")
+		io.WriteString(conn, "Content-Type: text/html\r\n")
+    	io.WriteString(conn, "\r\n")
+    	io.WriteString(conn, "<h1>Hello World!!</h1>")
+	} else if method == "GET" && path == "/sample.html" {
+		cwd, err := os.Getwd()
+		checkError(err)
+		p := filepath.Join(cwd, filepath.Clean(path))
+		resp, err := ioutil.ReadFile(p)
+		io.WriteString(conn, "HTTP/1.1 200 OK\r\n")
+		io.WriteString(conn, "Content-Type: text/html\r\n")
+    	io.WriteString(conn, "\r\n")
+    	io.WriteString(conn, string(resp))
+	} else if method == "GET" && path == "/hello" {
+		r := `{"message": "hello"}`
+		io.WriteString(conn, "HTTP/1.1 200 OK\r\n")
+		io.WriteString(conn, "Content-Type: application/json;charset=UTF-8\r\n")
+    	io.WriteString(conn, "\r\n")
+    	io.WriteString(conn, r)
+	} else if method == "POST" && path == "/hello" {
+		io.WriteString(conn, "HTTP/1.1 200 OK\r\n")
+		io.WriteString(conn, "Content-Type: application/json;charset=UTF-8\r\n")
+    	io.WriteString(conn, "\r\n")
+    	io.WriteString(conn, body)
+	} else {
+		io.WriteString(conn, "HTTP/1.1 404 OK\r\n")
+		io.WriteString(conn, "Content-Type: text/plain\r\n")
+    	io.WriteString(conn, "\r\n")
+    	io.WriteString(conn, "404")
+	}
 }
 
 func checkError(err error) {
