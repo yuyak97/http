@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -36,7 +37,9 @@ func goroutinSocket() {
 		}
 
 		// 複数のクライアントからの接続を捌く必要があるので並行処理
-		go handleClient(conn)
+		// go handleClient(conn)
+		handleClient(conn)
+
 	}
 }
 
@@ -54,7 +57,10 @@ func handleClient(conn net.Conn) {
 }
 
 func scanRequest(scanner *textproto.Reader, reader *bufio.Reader, conn net.Conn) {
-	var contentLength int
+	var method, path string
+	header := make(map[string]string)
+
+	isFirst := true
 
 	// 一行ずつ処理する
 	for {
@@ -66,26 +72,37 @@ func scanRequest(scanner *textproto.Reader, reader *bufio.Reader, conn net.Conn)
 			checkError(err)
 		}
 
-		if strings.HasPrefix(line, "Content-Length") {
-			contentLength, err = strconv.Atoi(strings.TrimSpace(strings.Split(line, ":")[1]))
-			if err != nil {
-				checkError(err)
-			}
+		if isFirst {
+			isFirst = false
+			headerLine := strings.Fields(line)
+			header["Method"] = headerLine[0]
+			header["Path"] = headerLine[1]
+			fmt.Println(method, path)
+			continue
 		}
-		fmt.Println(line)
+
+		headerFields := strings.SplitN(line, ": ", 2)
+        fmt.Printf("%s: %s\n", headerFields[0], headerFields[1])
+        header[headerFields[0]] = headerFields[1]
 	}
 
-	// リクエストボディ
-	buf := make([]byte, contentLength)
-	_, err := io.ReadFull(reader, buf)
-	if err != nil {
+	method, ok := header["Method"]
+    if !ok {
+        checkError(errors.New("no method found"))
+    }
 
-	}
-	fmt.Println("BODY:", string(buf))
-
-	if err != nil {
-		checkError(err)
-	}
+	if method == "POST" || method == "PUT" {
+        len, err := strconv.Atoi(header["Content-Length"])
+        if err != nil {
+            checkError(err)
+        }
+        buf := make([]byte, len)
+        _, err = io.ReadFull(reader, buf)
+        if err != nil {
+            checkError(err)
+        }
+        fmt.Println("BODY:", string(buf))
+    }
 }
 
 func checkError(err error) {
