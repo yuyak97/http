@@ -59,6 +59,7 @@ func handleClient(conn net.Conn) {
 	fmt.Println("<<< end")
 }
 
+//  HTTP リクエストをパース
 func scanRequest(scanner *textproto.Reader, reader *bufio.Reader, conn net.Conn) (method, path, body string) {
 	header := make(map[string]string)
 	isFirst := true
@@ -66,6 +67,7 @@ func scanRequest(scanner *textproto.Reader, reader *bufio.Reader, conn net.Conn)
 	// 一行ずつ処理する
 	for {
 		line, err := scanner.ReadLine()
+		// 返り値が空文字であれば空行と判断する
 		if line == "" {
 			break
 		}
@@ -110,6 +112,7 @@ func scanRequest(scanner *textproto.Reader, reader *bufio.Reader, conn net.Conn)
 	return method, path, body
 }
 
+// ルーティング
 func route(conn net.Conn, method, path, body string) {
 	if method == "GET" && path == "/" {
 		io.WriteString(conn, "HTTP/1.1 200 OK\r\n")
@@ -144,6 +147,7 @@ func route(conn net.Conn, method, path, body string) {
 	}
 }
 
+// エラーチェック
 func checkError(err error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
