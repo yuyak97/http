@@ -24,17 +24,19 @@ func main() {
 
 	method := os.Args[2]
 	path := os.Args[3]
-	// ソケットにデータの書き込み
-	reqH := fmt.Sprintf("%v %v HTTP/1.0\r\n", method, path)
-	// reqH := fmt.Sprintf("%v %v HTTP/1.0\r\n\r\n", method, path)
 
-	io.WriteString(conn, reqH)
+	// ソケットにデータの書き込み
+	reqH := fmt.Sprintf("%v %v HTTP/1.0", method, path)
+	io.WriteString(conn, reqH)	
+
 	if method == "POST" || method == "PUT" {
 		reqB := os.Args[4]
 		buf := []byte(reqB)
+		io.WriteString(conn, reqH + "\r\n")
 		io.WriteString(conn, fmt.Sprintf("Content-Length: %v\r\n\r\n", len(buf)))
-		fmt.Println(reqB)
 		io.WriteString(conn, reqB)
+	} else {
+		io.WriteString(conn, reqH + "\r\n\r\n")	
 	}
 
 	res := make([]byte, 1024)
