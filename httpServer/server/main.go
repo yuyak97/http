@@ -39,8 +39,7 @@ func goroutinSocket() {
 		}
 
 		// 複数のクライアントからの接続を捌く必要があるので並行処理
-		// go handleClient(conn)
-		handleClient(conn)
+		go handleClient(conn)
 
 	}
 }
