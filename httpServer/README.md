@@ -2,6 +2,12 @@
 
 ## /server/main.go 使い方
 
+```
+go run server/main.go
+```
+
+### リクエスト
+
 - GET /
 
 ```
@@ -24,6 +30,18 @@ curl -i http://localhost:7777/hello
 
 ```
 $ curl -v http://localhost:7777/hello -X POST -d "{"message": "hello"}"
+```
+
+## /client/main.go 使い方
+
+`go run main.go`のあとに引数として、`アクセス先`、`パス`、`リクエストボディ`を設定。
+
+```
+go run client/main.go localhost POST /hello "{"message": "hello"}"
+```
+
+```
+go run main.go localhost GET /hello
 ```
 
 ## 参考
