@@ -1,5 +1,17 @@
 # socket 通信
 
+- server
+
+```
+go run main.go
+```
+
+- client
+
+```
+go run main.go localhost:7777
+```
+
 ## 参考
 
 下記の記事のコードを参考に作ってます。

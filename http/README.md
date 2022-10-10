@@ -1,5 +1,7 @@
 # http サーバー
 
+## /server/main.go 使い方
+
 - GET /
 
 ```
